@@ -1,0 +1,38 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: intec-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: intec_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+
+  app:
+    build: .
+    container_name: intec-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: intec_db
+      DB_PORT: 3306
+      JWT_SECRET: mi_clave_secreta_123
+
+volumes:
+  db_data:
