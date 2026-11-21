@@ -11,3 +11,8 @@ export const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10
 });
+
+
+pool.query('SELECT 1')
+    .then(() => console.log('MySQL conectado correctamente'))
+    .catch((e) => console.error('Error conectando a MySQL:', e));
