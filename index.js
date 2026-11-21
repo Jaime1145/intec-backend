@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import routeUsuario from './app/routes/routes.usuario.js';
 import routeAuth from './app/routes/routes.auth.js';
+import routePrograma from './app/routes/routes.programa.js';
+import routeEstudiante from './app/routes/routes.estudiante.js';
 
 const app = express();
 
@@ -14,6 +16,8 @@ app.use('/api', routeAuth);
 
 // 2. Luego las rutas del CRUD de usuarios
 app.use('/api', routeUsuario);
+app.use('/api', routePrograma);
+app.use('/api', routeEstudiante);
 
 // Ruta de prueba para saber que el servidor está vivo
 app.get('/', (req, res) => {
