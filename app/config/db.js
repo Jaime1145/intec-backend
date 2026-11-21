@@ -9,7 +9,8 @@ export const pool = mysql.createPool({
     database: process.env.DB_NAME || process.env.MYSQLDATABASE || 'intec_db',
     port: Number(process.env.DB_PORT || process.env.MYSQLPORT || 3307),
     waitForConnections: true,
-    connectionLimit: 10
+    connectionLimit: 10,
+    dateStrings: true
 });
 
 
