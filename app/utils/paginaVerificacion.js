@@ -101,26 +101,29 @@ export const paginaError = () => pagina('Error', `
 // d: fila de la consulta (documento + matrícula + estudiante + programa + pago)
 export const paginaDocumento = (d, emitido) => {
     const esRecibo = d.tipo === 'recibo';
+    const esCertificado = d.tipo === 'certificado';
     const anulado = !d.vigente;
-    const matriculaVigente = ['activa', 'graduada'].includes(d.estado);
+    // La constancia exige matrícula activa o graduada; el certificado exige que siga graduada
+    const matriculaVigente = esCertificado ? d.estado === 'graduada' : ['activa', 'graduada'].includes(d.estado);
+    const nombreDoc = esRecibo ? 'Recibo de pago' : esCertificado ? 'Certificado de estudios' : 'Constancia de matrícula';
 
     let clase = 'ok';
     let icono = '✔';
     let titulo = 'Documento válido';
     let detalle = esRecibo
         ? 'Este recibo fue emitido por la institución.'
-        : 'Esta constancia fue emitida por la institución y los datos coinciden con nuestros registros.';
+        : `Este ${esCertificado ? 'certificado' : 'documento'} fue emitido por la institución y los datos coinciden con nuestros registros.`;
 
     if (anulado) {
         clase = 'mal'; icono = '✖'; titulo = 'Documento anulado';
         detalle = 'Este documento fue emitido, pero ya no tiene validez.';
     } else if (!esRecibo && !matriculaVigente) {
         clase = 'aviso'; icono = '!'; titulo = 'Documento auténtico, matrícula no vigente';
-        detalle = `La constancia es auténtica, pero la matrícula hoy figura como ${(ESTADO[d.estado] || d.estado).toLowerCase()}.`;
+        detalle = `El documento es auténtico, pero la matrícula hoy figura como ${(ESTADO[d.estado] || d.estado).toLowerCase()}.`;
     }
 
     const filas = [
-        fila('Documento', esRecibo ? 'Recibo de pago' : 'Constancia de matrícula'),
+        fila('Documento', nombreDoc),
         fila('Estudiante', `${d.nombres} ${d.apellidos}`.toUpperCase()),
         fila('Identificación', documentoOculto(d.tipo_documento, d.documento)),
         fila('Programa', `${d.programa} (${NIVEL[d.nivel] || d.nivel})`),

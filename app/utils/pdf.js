@@ -137,6 +137,40 @@ export const construirConstancia = async ({ m, codigo, url, fecha }) => {
     return listo;
 };
 
+export const construirCertificado = async ({ m, codigo, url, fecha }) => {
+    const { doc, terminado } = crearDoc(`Certificado de estudios - ${m.documento}`);
+    encabezado(doc);
+    titulo(doc, 'CERTIFICADO DE ESTUDIOS', 150);
+
+    doc.fillColor(TEXTO).font('Helvetica-Bold').fontSize(12)
+        .text('CERTIFICA', MARGEN, 215, { width: ANCHO, align: 'center' });
+
+    doc.fontSize(12);
+    doc.x = MARGEN; doc.y = 250;
+    const partes = [
+        ['Que ', false], [nombreCompleto(m), true],
+        [', identificado(a) con ', false], [`${m.tipo_documento} No. ${m.documento}`, true],
+        [', cursó y culminó el programa ', false], [m.programa, true],
+        [`, de nivel ${NIVEL[m.nivel] || m.nivel}, en modalidad a distancia`, false]
+    ];
+    if (m.duracion_meses) partes.push([`, con una duración de ${m.duracion_meses} meses`, false]);
+    partes.push([`, iniciado en el periodo académico `, false], [m.periodo, true]);
+    partes.push([`. Su estado académico es `, false], [ESTADO[m.estado] || m.estado, true], ['.', false]);
+    parrafo(doc, partes);
+
+    doc.moveDown(1.2);
+    parrafo(doc, [[
+        `El presente certificado se expide a solicitud del interesado${instituto.ciudad ? ` en ${instituto.ciudad}` : ''}, el ${fechaLarga(fecha)}.`,
+        false
+    ]]);
+
+    firma(doc, 530);
+    await bloqueVerificacion(doc, codigo, url);
+    const listo = terminado;
+    doc.end();
+    return listo;
+};
+
 export const construirRecibo = async ({ r, codigo, url }) => {
     const { doc, terminado } = crearDoc(`Recibo de pago ${String(r.id).padStart(6, '0')}`);
     encabezado(doc);

@@ -4,7 +4,7 @@ import { instituto } from '../config/instituto.js';
 import { fallo } from '../utils/respuestas.js';
 import { hoyColombia } from '../utils/cuotas.js';
 import { fechaDesdeTimestamp } from '../utils/fechas.js';
-import { construirConstancia, construirRecibo } from '../utils/pdf.js';
+import { construirConstancia, construirRecibo, construirCertificado } from '../utils/pdf.js';
 
 // Sin letras ni números que se confunden (I, O, 0, 1). 32 símbolos: reparto uniforme con bytes de 0 a 255.
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -75,6 +75,36 @@ export const constancia = async (req, res) => {
             m, codigo, url: `${instituto.publicUrl}/verificar/${codigo}`, fecha: emitido
         });
         enviarPdf(res, pdf, `constancia-${limpio(m.documento)}.pdf`);
+    } catch (error) {
+        fallo(res, error);
+    }
+};
+
+// GET /api/matriculas/:id/certificado (solo matrículas graduadas)
+export const certificado = async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT m.id, m.periodo, m.fecha_matricula, m.estado,
+                   e.tipo_documento, e.documento, e.nombres, e.apellidos,
+                   p.nombre AS programa, p.nivel, p.duracion_meses
+            FROM matriculas m
+            JOIN estudiantes e ON e.id = m.estudiante_id
+            JOIN programas p ON p.id = m.programa_id
+            WHERE m.id = ?`, [req.params.id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Matrícula no encontrada' });
+
+        const m = rows[0];
+        if (m.estado !== 'graduada') {
+            return res.status(409).json({
+                error: 'El certificado de estudios solo se emite a matrículas en estado graduada'
+            });
+        }
+
+        const { codigo, emitido } = await obtenerCodigo('certificado', m.id, null);
+        const pdf = await construirCertificado({
+            m, codigo, url: `${instituto.publicUrl}/verificar/${codigo}`, fecha: emitido
+        });
+        enviarPdf(res, pdf, `certificado-${limpio(m.documento)}.pdf`);
     } catch (error) {
         fallo(res, error);
     }
