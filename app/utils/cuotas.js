@@ -11,15 +11,21 @@ export const sumarMeses = (iso, meses) => {
 export const hoyColombia = () =>
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
-// Reparte el valor total en cuotas mensuales (la última absorbe los centavos sobrantes).
+// Reparte el valor total en cuotas mensuales de pesos enteros: los pesos que sobran se suman de a uno
+// a las primeras cuotas (800.000 en 3 -> 266.667, 266.667, 266.666). Los centavos, si el valor total
+// los trae, quedan en la última cuota.
 // Devuelve filas listas para INSERT: [matricula_id, numero_cuota, valor, fecha_vencimiento]
 export const generarCuotas = (matriculaId, total, numCuotas, fechaInicio) => {
     const totalCentavos = Math.round(total * 100);
-    const base = Math.floor(totalCentavos / numCuotas);
-    const resto = totalCentavos - base * numCuotas;
+    const basePesos = Math.floor(totalCentavos / (100 * numCuotas));
+    const resto = totalCentavos - basePesos * 100 * numCuotas;
+    const pesosExtra = Math.floor(resto / 100);
+    const centavosSueltos = resto % 100;
     const filas = [];
     for (let i = 0; i < numCuotas; i++) {
-        const centavos = base + (i === numCuotas - 1 ? resto : 0);
+        const centavos = basePesos * 100
+            + (i < pesosExtra ? 100 : 0)
+            + (i === numCuotas - 1 ? centavosSueltos : 0);
         filas.push([matriculaId, i + 1, centavos / 100, sumarMeses(fechaInicio, i)]);
     }
     return filas;
