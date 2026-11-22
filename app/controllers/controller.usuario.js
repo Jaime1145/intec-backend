@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { pool } from '../config/db.js';
 
 // 1. Listar todos los usuarios
@@ -26,9 +27,15 @@ export const obtenerUsuario = async (req, res) => {
 export const crearUsuario = async (req, res) => {
     try {
         const { nombre, email, password } = req.body;
+        if (!nombre || !email || !password) {
+            return res.status(400).json({ error: 'Nombre, correo y contraseña son obligatorios' });
+        }
+        if (String(password).length < 8) {
+            return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+        }
         const [result] = await pool.query(
             'INSERT INTO usuarios (nombre, email, password) VALUES (?, ?, ?)',
-            [nombre, email, password]
+            [nombre, email, await bcrypt.hash(String(password), 10)]
         );
         res.json({ id: result.insertId, nombre, email });
     } catch (error) {

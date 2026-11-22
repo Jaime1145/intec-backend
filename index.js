@@ -8,6 +8,7 @@ import routeMatricula from './app/routes/routes.matricula.js';
 import routeDocumento from './app/routes/routes.documento.js';
 import routeVerificacion from './app/routes/routes.verificacion.js';
 import routeAlerta from './app/routes/routes.alerta.js';
+import { asegurarAdmin } from './app/utils/admin.js';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api', routeAlerta);
 app.get('/', (req, res) => {
     res.send('Servidor backend de INTEC funcionando correctamente 🚀');
 });
+asegurarAdmin().catch((e) => console.error('No se pudo crear el administrador:', e.message));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
