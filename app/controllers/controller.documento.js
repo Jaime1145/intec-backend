@@ -3,6 +3,7 @@ import { pool } from '../config/db.js';
 import { instituto } from '../config/instituto.js';
 import { fallo } from '../utils/respuestas.js';
 import { hoyColombia } from '../utils/cuotas.js';
+import { fechaDesdeTimestamp } from '../utils/fechas.js';
 import { construirConstancia, construirRecibo } from '../utils/pdf.js';
 
 // Sin letras ni números que se confunden (I, O, 0, 1). 32 símbolos: reparto uniforme con bytes de 0 a 255.
@@ -10,15 +11,18 @@ const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const nuevoCodigo = () =>
     Array.from(crypto.randomBytes(12), (b) => ALFABETO[b % ALFABETO.length]).join('');
 
-// Reutiliza el código del mismo documento (así el QR de una constancia ya enviada no cambia)
+// Reutiliza el código del mismo documento (así el QR de una constancia ya enviada no cambia).
+// Devuelve también la fecha en que se emitió por primera vez, para que el PDF siempre diga lo mismo.
 const obtenerCodigo = async (tipo, matriculaId, pagoId) => {
     const [existente] = await pool.query(
-        `SELECT codigo FROM documentos
+        `SELECT codigo, UNIX_TIMESTAMP(created_at) AS ts FROM documentos
          WHERE tipo = ? AND matricula_id = ? AND pago_id <=> ? AND vigente = 1
          ORDER BY id LIMIT 1`,
         [tipo, matriculaId, pagoId]
     );
-    if (existente.length > 0) return existente[0].codigo;
+    if (existente.length > 0) {
+        return { codigo: existente[0].codigo, emitido: fechaDesdeTimestamp(existente[0].ts) };
+    }
 
     for (let intento = 0; intento < 5; intento++) {
         const codigo = nuevoCodigo();
@@ -27,7 +31,7 @@ const obtenerCodigo = async (tipo, matriculaId, pagoId) => {
                 'INSERT INTO documentos (codigo, tipo, matricula_id, pago_id) VALUES (?, ?, ?, ?)',
                 [codigo, tipo, matriculaId, pagoId]
             );
-            return codigo;
+            return { codigo, emitido: hoyColombia() };
         } catch (error) {
             if (error.code !== 'ER_DUP_ENTRY') throw error;
         }
@@ -66,9 +70,9 @@ export const constancia = async (req, res) => {
             });
         }
 
-        const codigo = await obtenerCodigo('constancia', m.id, null);
+        const { codigo, emitido } = await obtenerCodigo('constancia', m.id, null);
         const pdf = await construirConstancia({
-            m, codigo, url: `${instituto.publicUrl}/verificar/${codigo}`, fecha: hoyColombia()
+            m, codigo, url: `${instituto.publicUrl}/verificar/${codigo}`, fecha: emitido
         });
         enviarPdf(res, pdf, `constancia-${limpio(m.documento)}.pdf`);
     } catch (error) {
@@ -102,7 +106,7 @@ export const recibo = async (req, res) => {
         }
         r.saldo = Number(r.total_cuotas) - Number(r.pagado_hasta_aqui);
 
-        const codigo = await obtenerCodigo('recibo', r.matricula_id, r.id);
+        const { codigo } = await obtenerCodigo('recibo', r.matricula_id, r.id);
         const pdf = await construirRecibo({
             r, codigo, url: `${instituto.publicUrl}/verificar/${codigo}`
         });
