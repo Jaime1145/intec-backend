@@ -9,6 +9,7 @@ import routeDocumento from './app/routes/routes.documento.js';
 import routeVerificacion from './app/routes/routes.verificacion.js';
 import routeAlerta from './app/routes/routes.alerta.js';
 import { asegurarAdmin } from './app/utils/admin.js';
+import routeDemo from './app/routes/routes.demo.js';
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api', routeMatricula);
 app.use('/api', routeDocumento);
 app.use('/', routeVerificacion);
 app.use('/api', routeAlerta);
+app.use('/api', routeDemo);
 
 // Ruta de prueba para saber que el servidor está vivo
 app.get('/', (req, res) => {
