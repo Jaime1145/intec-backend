@@ -7,6 +7,7 @@ import routeEstudiante from './app/routes/routes.estudiante.js';
 import routeMatricula from './app/routes/routes.matricula.js';
 import routeDocumento from './app/routes/routes.documento.js';
 import routeVerificacion from './app/routes/routes.verificacion.js';
+import routeAlerta from './app/routes/routes.alerta.js';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api', routeEstudiante);
 app.use('/api', routeMatricula);
 app.use('/api', routeDocumento);
 app.use('/', routeVerificacion);
+app.use('/api', routeAlerta);
 
 // Ruta de prueba para saber que el servidor está vivo
 app.get('/', (req, res) => {
